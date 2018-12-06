@@ -44,23 +44,32 @@ var blockchain = [getGenesisBlock()];
 var issue2options = {
     origin: 'http://127.0.0.1:8000',
     methods: ['POST', 'GET'],
-    credentials: true,
+    credentials: false,
     maxAge: 3600
 };
 
 var initHttpServer = () => {
 
     var app = express();
-    app.options('*', cors(issue2options));
-    app.options('/mineBlock', cors(issue2options));
-    app.options('/block', cors(issue2options));
-    app.options('/block:id', cors(issue2options));
+    app.use(function(req, res, next) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+        next();
+    });
+      
+    app.get('/', function(req, res, next) {
+        // Handle the get for this route
+    });
+    
+    app.post('/', function(req, res, next) {
+        // Handle the post for this route
+    });
     app.use(bodyParser.urlencoded({ extended: true }));
     app.use(bodyParser.json());
 
-    app.get('/blocks', (req, res) => res.send(blockchain));
+    app.get('/blocks', (req, res, next) => res.send(blockchain));
 
-    app.get('/blocks/:id', function (req, res) {
+    app.get('/blocks/:id', function (req, res, next) {
         if (0 < +req.params.id < blockchain.length) {
             res.status(200).send(blockchain[+req.params.id]);
         } else {
@@ -70,11 +79,12 @@ var initHttpServer = () => {
     });
     
 
-    app.post('/mineBlock', (req, res) => {
+    app.post('/mineBlock', (req, res, next) => {
         var newBlock = generateNextBlock(req.body.data);
         addBlock(newBlock);
         broadcast(responseLatestMsg());
         console.log('block added: ' + JSON.stringify(newBlock));
+        res.redirect(`/blocks/${newBlock.index}`);
         res.send(newBlock);
     });
     app.get('/peers', (req, res) => {
